@@ -2,80 +2,88 @@ const express = require('express')
 const router = express.Router()
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const pool = require('../db')  // import database connection
 
-// temporary in-memory storage (we replace with PostgreSQL tomorrow)
-// think of this as an array acting as our database for now
-const users = []
-
-// ─── REGISTER ROUTE ───────────────────────────────────────
-// POST /api/auth/register
+// ─── REGISTER ─────────────────────────────────────────────
 router.post('/register', async (req, res) => {
-
-  // req.body contains whatever frontend sent us
   const { name, email, password } = req.body
 
-  // check if all fields exist
   if (!name || !email || !password) {
     return res.status(400).json({ message: 'All fields are required' })
   }
 
-  // check if user already exists
-  const existingUser = users.find(u => u.email === email)
-  if (existingUser) {
-    return res.status(400).json({ message: 'Email already registered' })
+  try {
+    // check if email already exists in database
+    const existingUser = await pool.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    )
+
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ message: 'Email already registered' })
+    }
+
+    // hash password
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    // insert new user into database
+    await pool.query(
+      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3)',
+      [name, email, hashedPassword]
+    )
+
+    res.status(201).json({ message: 'User registered successfully' })
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
   }
-
-  // hash the password — 10 is the salt rounds (how many times to scramble)
-  const hashedPassword = await bcrypt.hash(password, 10)
-
-  // create new user object and push to our array
-  const newUser = {
-    id: users.length + 1,
-    name,
-    email,
-    password: hashedPassword   // never store plain text password
-  }
-  users.push(newUser)
-
-  res.status(201).json({ message: 'User registered successfully' })
 })
 
-// ─── LOGIN ROUTE ───────────────────────────────────────────
-// POST /api/auth/login
+// ─── LOGIN ─────────────────────────────────────────────────
 router.post('/login', async (req, res) => {
-
   const { email, password } = req.body
 
   if (!email || !password) {
     return res.status(400).json({ message: 'All fields are required' })
   }
 
-  // find user by email
-  const user = users.find(u => u.email === email)
-  if (!user) {
-    return res.status(400).json({ message: 'Invalid email or password' })
+  try {
+    // find user by email in database
+    const result = await pool.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email]
+    )
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ message: 'Invalid email or password' })
+    }
+
+    const user = result.rows[0]  // first row returned
+
+    // compare passwords
+    const isMatch = await bcrypt.compare(password, user.password)
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid email or password' })
+    }
+
+    // create token
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    )
+
+    res.json({
+      message: 'Login successful',
+      token,
+      user: { id: user.id, name: user.name, email: user.email }
+    })
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
   }
-
-  // compare typed password with hashed password in our array
-  const isMatch = await bcrypt.compare(password, user.password)
-  if (!isMatch) {
-    return res.status(400).json({ message: 'Invalid email or password' })
-  }
-
-  // create JWT token
-  // this token proves the user is logged in
-  // we sign it with our secret key from .env
-  const token = jwt.sign(
-    { id: user.id, email: user.email },  // data to store inside token
-    process.env.JWT_SECRET,               // secret key
-    { expiresIn: '7d' }                   // token expires in 7 days
-  )
-
-  res.json({
-    message: 'Login successful',
-    token,
-    user: { id: user.id, name: user.name, email: user.email }
-  })
 })
 
 module.exports = router

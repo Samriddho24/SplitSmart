@@ -1,6 +1,9 @@
 const express = require('express')
 const cors = require('cors')
 require('dotenv').config()   // loads .env file
+const pool = require('./db')
+const groupRoutes = require('./routes/groups')
+
 
 const authRoutes = require('./routes/auth')
 
@@ -11,8 +14,10 @@ app.use(cors())
 app.use(express.json())
 
 
+
 // all auth routes will start with /api/auth
 app.use('/api/auth', authRoutes)
+app.use('/api/groups', groupRoutes)
 
 // test route
 app.get('/', (req, res) => {
