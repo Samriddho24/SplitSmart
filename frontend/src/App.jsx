@@ -1,28 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import Login from './pages/login'
-import Dashboard from './pages/dashboard'
+import Login from './pages/Login.jsx'
+import Dashboard from './pages/Dashboard.jsx'
+import GroupDetail from './pages/GroupDetail.jsx'
 
 function App() {
-
-  // check if user is logged in by looking for token
   const token = localStorage.getItem('token')
 
   return (
     <BrowserRouter>
       <Routes>
-
-        {/* if token exists go to dashboard, else show login */}
-        <Route
-          path="/"
-          element={token ? <Navigate to="/dashboard" /> : <Login />}
-        />
-
-        {/* protected route — only if logged in */}
-        <Route
-          path="/dashboard"
-          element={token ? <Dashboard /> : <Navigate to="/" />}
-        />
-
+        <Route path="/" element={token ? <Navigate to="/dashboard" /> : <Login />} />
+        <Route path="/dashboard" element={token ? <Dashboard /> : <Navigate to="/" />} />
+        <Route path="/group/:id" element={token ? <GroupDetail /> : <Navigate to="/" />} />
       </Routes>
     </BrowserRouter>
   )

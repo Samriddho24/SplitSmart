@@ -3,18 +3,18 @@ import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 
 function Login() {
+  const navigate = useNavigate()
+
   const [activeTab, setActiveTab] = useState('login')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')      // to show error messages
-  const [loading, setLoading] = useState(false) // to disable button while waiting
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   async function handleSubmit() {
-    // clear previous errors
     setError('')
 
-    // validation
     if (email === '' || password === '') {
       setError('Please fill in all fields')
       return
@@ -24,44 +24,33 @@ function Login() {
       return
     }
 
-    setLoading(true)  // disable button, show loading
+    setLoading(true)
 
     try {
       if (activeTab === 'register') {
-        // send POST request to backend register route
-        const response = await axios.post('http://localhost:5000/api/auth/register', {
+        await axios.post('http://localhost:5000/api/auth/register', {
           name,
           email,
           password
         })
-        // if successful, switch to login tab
         setActiveTab('login')
         setEmail('')
         setPassword('')
         setError('Account created! Please login.')
-
       } else {
-        // send POST request to backend login route
         const response = await axios.post('http://localhost:5000/api/auth/login', {
           email,
           password
         })
-        // save token in localStorage
         localStorage.setItem('token', response.data.token)
         localStorage.setItem('user', JSON.stringify(response.data.user))
- 
-
-        // add this inside the Login function, above handleSubmit
-        const navigate = useNavigate()
-        navigate('/dashboard')
+        window.location.href = '/dashboard'
       }
-
     } catch (err) {
-      // backend sends error in err.response.data.message
       setError(err.response?.data?.message || 'Something went wrong')
     }
 
-    setLoading(false)  // re-enable button
+    setLoading(false)
   }
 
   return (
@@ -116,7 +105,6 @@ function Login() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
-          {/* show error message if any */}
           {error && <p className="error-text">{error}</p>}
 
           <button
