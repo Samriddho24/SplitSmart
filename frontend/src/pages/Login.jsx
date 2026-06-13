@@ -11,6 +11,7 @@ function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   async function handleSubmit() {
     setError('')
@@ -97,14 +98,33 @@ function Login() {
             onChange={(e) => setEmail(e.target.value)}
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            className="input"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
 
+<div style={{position: 'relative'}}>
+  <input
+    type={showPassword ? 'text' : 'password'}
+    placeholder="Password"
+    className="input"
+    value={password}
+    onChange={(e) => setPassword(e.target.value)}
+    style={{width: '100%'}}
+  />
+  <button
+    onClick={() => setShowPassword(!showPassword)}
+    style={{
+      position: 'absolute',
+      right: '12px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      background: 'none',
+      border: 'none',
+      color: '#888',
+      cursor: 'pointer',
+      fontSize: '14px'
+    }}
+  >
+    {showPassword ? 'Hide' : 'Show'}
+  </button>
+</div>
           {error && <p className="error-text">{error}</p>}
 
           <button

@@ -14,7 +14,7 @@ function GroupDetail() {
   const [amount, setAmount] = useState('')
   const [memberEmail, setMemberEmail] = useState('')
   const [message, setMessage] = useState('')
-  const user = JSON.parse(localStorage.getItem('user'))
+  const user = JSON.parse(localStorage.getItem('user')) || {}
 
   useEffect(() => {
     fetchData()
@@ -38,9 +38,7 @@ function GroupDetail() {
   async function handleAddExpense() {
     if (!description || !amount) return
     try {
-      const settleRes = await API.get(`/settlements/${id}`)
-      const allMemberIds = Object.keys(settleRes.data.balances).map(Number)
-
+      const allMemberIds = members.map(m => m.id)
       await API.post('/expenses/add', {
         group_id: parseInt(id),
         description,
@@ -56,24 +54,18 @@ function GroupDetail() {
     }
   }
 
-  async function handleAddExpense() {
-    if (!description || !amount) return
+  async function handleAddMember() {
+    if (!memberEmail) return
     try {
-      // use members we already fetched
-      const allMemberIds = members.map(m => m.id)
-  
-      await API.post('/expenses/add', {
+      await API.post('/groups/addmember', {
         group_id: parseInt(id),
-        description,
-        amount: parseFloat(amount),
-        split_between: allMemberIds
+        user_email: memberEmail
       })
-      setDescription('')
-      setAmount('')
-      setShowModal(false)
+      setMemberEmail('')
+      setMessage('Member added successfully!')
       fetchData()
     } catch (err) {
-      console.error(err)
+      setMessage('User not found or already added')
     }
   }
 
@@ -93,7 +85,6 @@ function GroupDetail() {
           <h1>Group Expenses</h1>
         </div>
 
-        {/* Members display */}
         {members.length > 0 && (
           <div className="stat-card" style={{marginBottom: '24px'}}>
             <p className="stat-label" style={{marginBottom: '12px'}}>👥 Members</p>
@@ -113,7 +104,6 @@ function GroupDetail() {
           </div>
         )}
 
-        {/* Add Member */}
         <div className="stat-card" style={{marginBottom: '24px'}}>
           <p className="stat-label" style={{marginBottom: '12px'}}>Add Member by Email</p>
           <div style={{display: 'flex', gap: '12px'}}>
@@ -125,64 +115,44 @@ function GroupDetail() {
               onChange={(e) => setMemberEmail(e.target.value)}
               style={{flex: 1}}
             />
-            <button className="btn-primary" onClick={handleAddMember}>
-              Add
-            </button>
+            <button className="btn-primary" onClick={handleAddMember}>Add</button>
           </div>
-          {message && (
-            <p style={{color: '#4ade80', fontSize: '13px', marginTop: '8px'}}>
-              {message}
-            </p>
-          )}
+          {message && <p style={{color: '#4ade80', fontSize: '13px', marginTop: '8px'}}>{message}</p>}
         </div>
 
-        {/* Settlements */}
         {settlements.length > 0 && (
           <div className="stat-card" style={{marginBottom: '24px'}}>
             <p className="stat-label" style={{marginBottom: '12px'}}>💰 Who Owes What</p>
             {settlements.map((s, i) => (
-              <div key={i} style={{
-                padding: '8px 0',
-                borderBottom: '1px solid #2a2a2a',
-                color: '#fff'
-              }}>
+              <div key={i} style={{padding: '8px 0', borderBottom: '1px solid #2a2a2a', color: '#fff'}}>
                 <span style={{color: '#f87171'}}>{s.from}</span>
                 {' owes '}
                 <span style={{color: '#4ade80'}}>{s.to}</span>
-                {' '}
-                <strong>₹{s.amount}</strong>
+                {' '}<strong>₹{s.amount}</strong>
               </div>
             ))}
           </div>
         )}
 
-        {/* Expenses List */}
         <div className="section-header">
           <h2>Expenses</h2>
-          <button className="btn-primary" onClick={() => setShowModal(true)}>
-            + Add Expense
-          </button>
+          <button className="btn-primary" onClick={() => setShowModal(true)}>+ Add Expense</button>
         </div>
 
         {expenses.length === 0 ? (
-          <div className="empty-state">
-            <p>No expenses yet. Add one!</p>
-          </div>
+          <div className="empty-state"><p>No expenses yet. Add one!</p></div>
         ) : (
           <div className="groups-list" style={{marginTop: '16px'}}>
             {expenses.map(exp => (
               <div key={exp.id} className="group-card">
                 <h3>{exp.description}</h3>
-                <p style={{color: '#4ade80', fontSize: '16px', margin: '4px 0'}}>
-                  ₹{exp.amount}
-                </p>
+                <p style={{color: '#4ade80', fontSize: '16px', margin: '4px 0'}}>₹{exp.amount}</p>
                 <p>Paid by {exp.paid_by_name}</p>
               </div>
             ))}
           </div>
         )}
 
-        {/* Add Expense Modal */}
         {showModal && (
           <div className="modal-overlay">
             <div className="modal">
@@ -201,16 +171,10 @@ function GroupDetail() {
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
-              <p style={{color: '#888', fontSize: '13px'}}>
-                Split equally between all members
-              </p>
+              <p style={{color: '#888', fontSize: '13px'}}>Split equally between all members</p>
               <div className="modal-buttons">
-                <button className="btn-secondary" onClick={() => setShowModal(false)}>
-                  Cancel
-                </button>
-                <button className="btn-primary" onClick={handleAddExpense}>
-                  Add
-                </button>
+                <button className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                <button className="btn-primary" onClick={handleAddExpense}>Add</button>
               </div>
             </div>
           </div>
