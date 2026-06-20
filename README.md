@@ -78,16 +78,6 @@ npm install
 npm start
 ```
 
-### Environment Variables
-
-Create a `.env` file inside the backend directory:
-
-```env
-PORT=5000
-DATABASE_URL=your_postgresql_connection_string
-JWT_SECRET=your_secret_key
-```
-
 ## 🎯 How It Works
 
 1. Sign up or log in to your account.
