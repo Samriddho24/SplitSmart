@@ -20,6 +20,11 @@ function Login() {
       setError('Please fill in all fields')
       return
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address')
+      return
+    }
     if (activeTab === 'register' && name === '') {
       setError('Please enter your name')
       return
